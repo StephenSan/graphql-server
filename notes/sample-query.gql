@@ -1,0 +1,46 @@
+// Models
+type Post {
+    title
+    subtitle
+}
+
+type User {
+    firstname
+    lastname
+    posts: [Post]
+    followers: [User]
+}
+
+// Frontend
+query {
+    User(id: "1") {
+        firstname
+        lastname
+        followers(last: 3) {
+            firstname
+        }
+    }
+}
+
+// Backend
+function followers(last?: integer, first?: integer) {
+    if (last && !first) {
+
+    }
+
+    if (first && !last) {
+
+    }
+}
+
+function User(id): User {
+    const user = http.Get('users/id')
+    const posts = http.Get('users/id/posts')
+
+    return {
+        firstname: user.firstname,
+        lastname: user.lastname,
+        posts: posts,
+        followers: followers
+    }
+}

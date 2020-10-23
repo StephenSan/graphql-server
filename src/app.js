@@ -19,9 +19,16 @@ var typeDefs = gql`
         id: ID!
         firstname: String!
         lastname: String!
+        fullname(delim: String): String!
         posts: [Post!]!
         following: [User!]!
         followers: [User!]!
+    }
+
+    input UpdateUser {
+        id: ID!
+        firstname: String!
+        lastname: String!
     }
 
     type Query {
@@ -33,6 +40,10 @@ var typeDefs = gql`
             firstname: String!
             lastname: String!
         ): User!
+
+        updateUser(
+            input: UpdateUser
+        ): User
 
         createPost(
             title: String!

@@ -1,6 +1,9 @@
 var express = require("express");
 var { ApolloServer, gql } =  require('apollo-server-express');
 var _ = require('lodash')
+const { UserDB, UserApi } = require("./api/user.api")
+const { FFRelDB } = require("./api/ffrel.api")
+
 
 // Schema definitions
 var typeDefs = gql`
@@ -38,39 +41,41 @@ var typeDefs = gql`
         ): Post!
 
         follow(userId: ID!, followedId: ID!): [User!]!
+
     }
 `;
 
-const users = []
+const userDb = new UserDB();
+const ffRelDb = new FFRelDB();
+const userApi = new UserApi({ userDb, ffRelDb });
 const posts = []
-const ffRel = []
-
 
 // Resolver functions
 const resolvers = {
     User: {
         posts: (user) => posts.filter(post => post.authorId === user.id),
         following: (user) => {
-            const followedIds = ffRel.filter((rel)=>rel.userId === user.id).map((rel) => rel.followedId)
-            return users.filter((u) => followedIds.indexOf(u.id) > -1 )
+            return userApi.resolveFollowing(user)
         },
         followers: (user) => {
-            const followerIds = ffRel.filter((rel)=>rel.followedId === user.id).map((rel) => rel.userId)
-            return users.filter((u) => followerIds.indexOf(u.id) > -1 )
+            return userApi.resolveFollowers(user)
+        },
+        fullname: (user, args) => {
+            return userApi.resolveFullname(user, args)
         }
-
     },
     Post: {
         author: (post) => users.find(user => user.id === post.authorId)
     },
     Query: {
-        allUsers: () => users 
+        allUsers: () => userApi.getAllUsers()
     },
     Mutation: {
         createUser: (_, args) => {
-            const newUser = {...args, posts:[], following:[], followers:[], id: Date.now().toString()}
-            users.push(newUser)
-            return newUser
+          return userApi.createUser(args)
+        },
+        updateUser: (_, args)=>{
+            return userApi.updateUser(args)
         },
         createPost: (_, args) => {
             const newPost = {...args, id: Date.now().toString()}
@@ -79,12 +84,7 @@ const resolvers = {
             
         },
         follow: (_, args) => {
-            ffRel.push({
-                userId: args.userId,
-                followedId: args.followedId
-            })
-            const followedIds = ffRel.filter((rel)=>rel.userId === args.userId).map((rel) => rel.followedId)
-            return users.filter((user) => followedIds.indexOf(user.id) > -1 )
+            return userApi.follow(args)
         }
     }
     
